@@ -1,4 +1,5 @@
 const { User, Thought } = require("../models");
+const reactionSchema = require("../models/Reactions");
 
 const thoughtRoutes = {
   //GET All Thoughts
@@ -26,7 +27,7 @@ const thoughtRoutes = {
       .then(
         User.findOneAndUpdate(
           { username: req.body.username },
-          { $set: req.body }
+          { $set: req.body._id }
         )
       )
       .then((thought) => res.json(thought))
@@ -54,8 +55,8 @@ const thoughtRoutes = {
   //DELETE Thought
   deleteThought(req, res) {
     Thought.findOneAndDelete({ _id: req.params.thoughtId })
-      .then((user) =>
-        !user
+      .then((thought) =>
+        !thought
           ? res.status(404).json({
               message: "That thought doesn't exist.",
             })
@@ -67,7 +68,37 @@ const thoughtRoutes = {
   },
   // spacer
   //POST Reaction to Thought
+  createReaction(req, res) {
+    Thought.findOneAndUpdate(
+      { _id: req.params.thoughtId },
+      { $set: { reactions: req.body.reactionId } },
+      { runValidators: true, new: true }
+    )
+      .then((reaction) =>
+        !reaction
+          ? res.status(404).json({
+              message: "That reaction doesn't exist.",
+            })
+          : res.json(reaction)
+      )
+      .catch((err) => res.status(500).json(err));
+  },
   //DELETE to Remove Reaction from Thought
+  deleteReaction(req, res) {
+    Thought.findOneAndUpdate(
+      { _id: req.params.thoughtId },
+      { $pull: { reactions: req.body.reactionId } },
+      { runValidators: true, new: true }
+    )
+      .then((reaction) =>
+        !reaction
+          ? res.status(404).json({
+              message: "That reaction doesn't exist.",
+            })
+          : res.json(reaction)
+      )
+      .catch((err) => res.status(500).json(err));
+  },
 };
 
 module.exports = thoughtRoutes;

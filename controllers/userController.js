@@ -62,10 +62,8 @@ const userRoutes = {
       )
       .catch((err) => res.status(500).json(err));
   },
-  // spacer
   //POST Friend to User
   addFriend(req, res) {
-    console.log(req);
     User.findOneAndUpdate(
       { _id: req.params.userId },
       { $addToSet: { friends: req.params.friendId } },

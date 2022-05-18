@@ -11,26 +11,25 @@ const thoughtRoutes = {
   //GET Single Thought
   getSingleThought(req, res) {
     Thought.findOne({ _id: req.params.thoughtId })
-      .select("-__v")
       .then((thought) =>
         !thought
           ? res.status(404).json({
               message: "That thought doesn't exist.",
             })
-          : res.json(user)
+          : res.json(thought)
       )
       .catch((err) => res.status(500).json(err));
   },
   //POST (Create) New Thought
   createThought(req, res) {
     Thought.create(req.body)
-      .then(
+      .then((thought) => {
         User.findOneAndUpdate(
-          { username: req.body.username },
-          { $set: req.body._id }
-        )
-      )
-      .then((thought) => res.json(thought))
+          { _id: req.body.userId },
+          { $addToSet: { thoughts: thought._id } },
+          { runValidators: true, new: true }
+        ).then((thought) => res.json(thought));
+      })
       .catch((err) => {
         console.log(err);
         return res.status(500).json(err);
@@ -55,6 +54,13 @@ const thoughtRoutes = {
   //DELETE Thought
   deleteThought(req, res) {
     Thought.findOneAndDelete({ _id: req.params.thoughtId })
+      .then(
+        User.findOneAndUpdate(
+          { _id: req.params.thoughtId },
+          { $pull: { reactions: { reactionId: req.body.reactionId } } },
+          { runValidators: true, new: true }
+        )
+      )
       .then((thought) =>
         !thought
           ? res.status(404).json({
@@ -71,7 +77,7 @@ const thoughtRoutes = {
   createReaction(req, res) {
     Thought.findOneAndUpdate(
       { _id: req.params.thoughtId },
-      { $set: { reactions: req.body.reactionId } },
+      { $addToSet: { reactions: req.body } },
       { runValidators: true, new: true }
     )
       .then((reaction) =>
@@ -87,7 +93,7 @@ const thoughtRoutes = {
   deleteReaction(req, res) {
     Thought.findOneAndUpdate(
       { _id: req.params.thoughtId },
-      { $pull: { reactions: req.body.reactionId } },
+      { $pull: { reactions: { reactionId: req.params.reactionId } } },
       { runValidators: true, new: true }
     )
       .then((reaction) =>
@@ -95,7 +101,9 @@ const thoughtRoutes = {
           ? res.status(404).json({
               message: "That reaction doesn't exist.",
             })
-          : res.json(reaction)
+          : res.json({
+              message: `Your reaction has been deleted!`,
+            })
       )
       .catch((err) => res.status(500).json(err));
   },
